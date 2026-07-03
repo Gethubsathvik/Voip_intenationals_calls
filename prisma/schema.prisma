@@ -1,0 +1,273 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String?
+  firstName             String?
+  lastName              String?
+  avatar                String?
+  phone                 String?
+  country               String    @default("US")
+  verified              Boolean   @default(false)
+  verifiedAt            DateTime?
+  blocked               Boolean   @default(false)
+  lastLogin             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  credits               Credits?
+  calls                 Call[]
+  transactions          Transaction[]
+  devices               Device[]
+  reports               Report[]
+  sessions              Session[]
+  oauthAccount          OAuthAccount?
+  apiKeys               ApiKey[]
+  settings              UserSettings?
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+// OAuth Account
+model OAuthAccount {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  provider  String
+  providerAccountId String
+  email     String?
+  name      String?
+  image     String?
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// Session
+model Session {
+  id            String     @id @default(cuid())
+  sessionToken  String     @unique
+  userId        String
+  expires       DateTime
+  createdAt     DateTime   @default(now())
+  
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Credits
+model Credits {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  balance           Float     @default(0)
+  lastDailyBonus    DateTime?
+  bonusAmount       Float     @default(5.0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Calls
+model Call {
+  id                String    @id @default(cuid())
+  userId            String
+  recipientNumber   String
+  recipientCountry  String
+  duration          Int       @default(0) // in seconds
+  creditsUsed       Float     @default(0)
+  status            CallStatus @default(INITIATED)
+  recordingUrl      String?
+  transcript        String?
+  quality           String?   // HD, Standard, etc
+  startedAt         DateTime?
+  endedAt           DateTime?
+  createdAt         DateTime  @default(now())
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twilioSid         String?   @unique
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  CONNECTED
+  COMPLETED
+  FAILED
+  MISSED
+  REJECTED
+  ENDED
+}
+
+// Transactions
+model Transaction {
+  id                String      @id @default(cuid())
+  userId            String
+  type              TransactionType
+  amount            Float
+  description       String?
+  status            TransactionStatus @default(PENDING)
+  referenceId       String?
+  createdAt         DateTime    @default(now())
+
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  DAILY_BONUS
+  PURCHASE
+  CALL_DEDUCTION
+  REFUND
+  REFERRAL_BONUS
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Device
+model Device {
+  id                String    @id @default(cuid())
+  userId            String
+  deviceId          String    @unique
+  deviceName        String
+  os                String
+  browser           String
+  ipAddress         String
+  lastUsed          DateTime  @default(now())
+  isTrusted         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Reports & Abuse Monitoring
+model Report {
+  id                String    @id @default(cuid())
+  userId            String
+  reportType        ReportType
+  description       String
+  status            ReportStatus @default(PENDING)
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum ReportType {
+  SPAM
+  ABUSE
+  FRAUD
+  TECHNICAL_ISSUE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+// API Key
+model ApiKey {
+  id                String    @id @default(cuid())
+  userId            String
+  key               String    @unique
+  name              String
+  lastUsed          DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
+}
+
+// User Settings
+model UserSettings {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  theme                 String    @default("dark")
+  language              String    @default("en")
+  twoFactorEnabled      Boolean   @default(false)
+  emailNotifications    Boolean   @default(true)
+  callRecording         Boolean   @default(false)
+  autoTranscribe        Boolean   @default(false)
+  privacyMode           Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Analytics (for admin dashboard)
+model Analytics {
+  id                String    @id @default(cuid())
+  date              DateTime  @default(now())
+  totalUsers        Int       @default(0)
+  activeUsers       Int       @default(0)
+  totalCalls        Int       @default(0)
+  totalDuration     Int       @default(0) // in minutes
+  totalCreditsUsed  Float     @default(0)
+  creditsDistributed Float   @default(0)
+  newUsers          Int       @default(0)
+  createdAt         DateTime  @default(now())
+
+  @@index([date])
+}
+
+// Referral
+model Referral {
+  id                String    @id @default(cuid())
+  referrerId        String
+  referredEmail     String
+  bonusAmount       Float     @default(2.0)
+  status            ReferralStatus @default(PENDING)
+  acceptedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([referrerId])
+  @@index([status])
+}
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}

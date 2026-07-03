@@ -1,0 +1,96 @@
+// app/login/page.tsx
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import { Card } from '@/components/Card';
+import { useAuth } from '@/hooks/useAuth';
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { login, loading } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    try {
+      await login(email, password);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Login failed');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <Link href="/" className="flex items-center text-gray-400 hover:text-white mb-8">
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back to Home
+        </Link>
+
+        <Card glass className="space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <p className="text-gray-400">Sign in to continue calling</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            <Input
+              label="Email"
+              icon={<Mail className="w-4 h-4" />}
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Password"
+              icon={<Lock className="w-4 h-4" />}
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <Button
+              type="submit"
+              isLoading={loading}
+              className="w-full"
+              size="md"
+            >
+              Sign In
+            </Button>
+          </form>
+
+          <div className="space-y-3 border-t border-gray-800 pt-6">
+            <Button variant="secondary" className="w-full">
+              Continue with Google
+            </Button>
+          </div>
+
+          <p className="text-center text-gray-400">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-blue-400 hover:text-blue-300">
+              Sign up for free
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </div>
+  );
+}
