@@ -145,7 +145,7 @@ voip-calling-app/
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/yourusername/voip-calling-app.git
+git clone https://github.com/Gethubsathvik/Voip_intenationals_calls.git
 cd voip-calling-app
 ```
 
