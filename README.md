@@ -48,8 +48,6 @@ A premium, production-ready browser-based VoIP calling platform built with Next.
 - ✅ User reports
 - ✅ Abuse monitoring
 
-## 🏗️ Architecture
-
 ### Tech Stack
 
 **Frontend:**
