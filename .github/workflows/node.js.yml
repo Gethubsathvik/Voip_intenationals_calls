@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Node.js CI/CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,10 +21,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Generate Prisma Client
-        run: npx prisma generate --if-present
+        run: npx prisma generate
 
       - name: Build project
         run: npm run build --if-present
